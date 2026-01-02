@@ -1,4 +1,4 @@
--- [[ PHARMACII LITE - BAGWORK LOGIC EDITION ]] --
+-- [[ PHARMACII LITE - OT7 BYPASS + L-CTRL TOGGLE ]] --
 
 local uis = game:GetService("UserInputService")
 local ts = game:GetService("TweenService")
@@ -6,10 +6,12 @@ local p = game.Players.LocalPlayer
 local backpack = p:WaitForChild("Backpack")
 
 -- [[ SETTINGS ]] --
-_G.TuckSpeed = 100 -- Default (Adjustable by Slider)
+_G.TuckSpeed = 100 
 local AutoTuckEnabled = false
+local UI_Visible = true
+local ToggleKey = Enum.KeyCode.LeftControl -- The key to hide/show UI
 
--- Clean up old UI
+-- Clean up
 if game:GetService("CoreGui"):FindFirstChild("AutoTuck_Lite") then
     game:GetService("CoreGui").AutoTuck_Lite:Destroy()
 end
@@ -24,6 +26,29 @@ Main.Position = UDim2.new(0.5, -150, 0.5, -80)
 Main.BackgroundColor3 = Color3.fromRGB(12, 12, 14)
 Main.BorderSizePixel = 0
 Instance.new("UICorner", Main)
+
+-- UI Toggle Logic (Left Control)
+uis.InputBegan:Connect(function(input, gpe)
+    if not gpe and input.KeyCode == ToggleKey then
+        UI_Visible = not UI_Visible
+        Main.Visible = UI_Visible
+    end
+end)
+
+-- Draggable Logic
+local dragging, dragStart, startPos
+Main.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true; dragStart = input.Position; startPos = Main.Position
+    end
+end)
+uis.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+uis.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
 
 local Title = Instance.new("TextLabel", Main)
 Title.Text = "PHARMACII AUTO-TUCK"; Title.Size = UDim2.new(1, 0, 0, 40)
@@ -50,9 +75,7 @@ SLabel.TextColor3 = Color3.fromRGB(150, 150, 155); SLabel.Font = "Gotham"; SLabe
 local SliderBg = Instance.new("Frame", Main)
 SliderBg.Size = UDim2.new(0, 260, 0, 4); SliderBg.Position = UDim2.new(0, 20, 0, 125); SliderBg.BackgroundColor3 = Color3.fromRGB(40, 40, 42)
 Instance.new("UICorner", SliderBg)
-
-local Fill = Instance.new("Frame", SliderBg)
-Fill.Size = UDim2.new(0.1, 0, 1, 0); Fill.BackgroundColor3 = Color3.fromRGB(255, 0, 50); Instance.new("UICorner", Fill)
+local Fill = Instance.new("Frame", SliderBg); Fill.Size = UDim2.new(0.1, 0, 1, 0); Fill.BackgroundColor3 = Color3.fromRGB(255, 0, 50); Instance.new("UICorner", Fill)
 
 SliderBg.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -68,34 +91,33 @@ SliderBg.InputBegan:Connect(function(input)
     end
 end)
 
--- [[ BAGWORK INTEGRATED TUCK LOGIC ]] --
--- This uses the exact logic from the file you provided
-backpack.ChildAdded:Connect(function(item)
-    if AutoTuckEnabled and item.Name == "Football" then
+-- [[ GITHUB SOURCE LOGIC ENGINE ]] --
+backpack.ChildAdded:Connect(function(child)
+    if AutoTuckEnabled and child.Name == "Football" then
         
-        -- wait(0.1) -- This was the default in your file, replaced with slider:
+        -- Use the delay from your slider
         task.wait(_G.TuckSpeed / 1000)
         
-        -- Exact Remote Arguments from your code
+        -- Logic directly from the GitHub source provided:
+        -- 1. Equip the ball
+        local char = p.Character
+        if char and char:FindFirstChild("Humanoid") then
+            char.Humanoid:EquipTool(child)
+        end
+        
+        -- 2. Fire the specific OT7 Tuck Remote
+        -- This uses the exact table structure from the GitHub link
         local args = {
             [1] = {
                 [1] = "Tuck"
             }
         }
         
-        -- Method A: Character-based remote (RCFA Style)
-        local char = p.Character
-        if char and char:FindFirstChild("Football") and char.Football:FindFirstChild("Handle") then
-            local remote = char.Football.Handle:FindFirstChild("RemoteEvent")
-            if remote then
-                remote:FireServer(unpack(args))
-            end
-        end
-
-        -- Method B: Jersey-based remote (HSFL Style)
-        local jersey = char and char:FindFirstChild("Jersey")
-        if jersey and jersey:FindFirstChild("Event") then
-            jersey.Event:FireServer(unpack(args))
+        -- The GitHub script looks for a 'Handle' then the RemoteEvent
+        if child:FindFirstChild("Handle") and child.Handle:FindFirstChild("RemoteEvent") then
+            child.Handle.RemoteEvent:FireServer(unpack(args))
         end
     end
 end)
+
+print("Pharmacii Lite: L-CTRL Toggle Active")
