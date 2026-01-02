@@ -1,0 +1,101 @@
+-- [[ PHARMACII LITE - BAGWORK LOGIC EDITION ]] --
+
+local uis = game:GetService("UserInputService")
+local ts = game:GetService("TweenService")
+local p = game.Players.LocalPlayer
+local backpack = p:WaitForChild("Backpack")
+
+-- [[ SETTINGS ]] --
+_G.TuckSpeed = 100 -- Default (Adjustable by Slider)
+local AutoTuckEnabled = false
+
+-- Clean up old UI
+if game:GetService("CoreGui"):FindFirstChild("AutoTuck_Lite") then
+    game:GetService("CoreGui").AutoTuck_Lite:Destroy()
+end
+
+local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+ScreenGui.Name = "AutoTuck_Lite"
+
+-- [[ UI CONSTRUCTION ]] --
+local Main = Instance.new("Frame", ScreenGui)
+Main.Size = UDim2.new(0, 300, 0, 160)
+Main.Position = UDim2.new(0.5, -150, 0.5, -80)
+Main.BackgroundColor3 = Color3.fromRGB(12, 12, 14)
+Main.BorderSizePixel = 0
+Instance.new("UICorner", Main)
+
+local Title = Instance.new("TextLabel", Main)
+Title.Text = "PHARMACII AUTO-TUCK"; Title.Size = UDim2.new(1, 0, 0, 40)
+Title.TextColor3 = Color3.fromRGB(255, 0, 50); Title.Font = "GothamBold"; Title.TextSize = 14; Title.BackgroundTransparency = 1
+
+local Toggle = Instance.new("TextButton", Main)
+Toggle.Size = UDim2.new(0, 260, 0, 35); Toggle.Position = UDim2.new(0, 20, 0, 45)
+Toggle.BackgroundColor3 = Color3.fromRGB(25, 25, 28); Toggle.Text = "STATUS: DISABLED"
+Toggle.TextColor3 = Color3.new(1,1,1); Toggle.Font = "GothamBold"; Toggle.TextSize = 12
+Instance.new("UICorner", Toggle)
+
+Toggle.MouseButton1Click:Connect(function()
+    AutoTuckEnabled = not AutoTuckEnabled
+    ts:Create(Toggle, TweenInfo.new(0.2), {
+        BackgroundColor3 = AutoTuckEnabled and Color3.fromRGB(255, 0, 50) or Color3.fromRGB(25, 25, 28)
+    }):Play()
+    Toggle.Text = AutoTuckEnabled and "STATUS: ENABLED" or "STATUS: DISABLED"
+end)
+
+local SLabel = Instance.new("TextLabel", Main)
+SLabel.Text = "TUCK DELAY: 100ms"; SLabel.Size = UDim2.new(1, 0, 0, 20); SLabel.Position = UDim2.new(0, 0, 0, 90)
+SLabel.TextColor3 = Color3.fromRGB(150, 150, 155); SLabel.Font = "Gotham"; SLabel.TextSize = 11; SLabel.BackgroundTransparency = 1
+
+local SliderBg = Instance.new("Frame", Main)
+SliderBg.Size = UDim2.new(0, 260, 0, 4); SliderBg.Position = UDim2.new(0, 20, 0, 125); SliderBg.BackgroundColor3 = Color3.fromRGB(40, 40, 42)
+Instance.new("UICorner", SliderBg)
+
+local Fill = Instance.new("Frame", SliderBg)
+Fill.Size = UDim2.new(0.1, 0, 1, 0); Fill.BackgroundColor3 = Color3.fromRGB(255, 0, 50); Instance.new("UICorner", Fill)
+
+SliderBg.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        local move; move = uis.InputChanged:Connect(function(m)
+            if m.UserInputType == Enum.UserInputType.MouseMovement then
+                local pos = math.clamp((m.Position.X - SliderBg.AbsolutePosition.X) / SliderBg.AbsoluteSize.X, 0, 1)
+                Fill.Size = UDim2.new(pos, 0, 1, 0)
+                _G.TuckSpeed = math.floor(pos * 1000)
+                SLabel.Text = "TUCK DELAY: " .. _G.TuckSpeed .. "ms"
+            end
+        end)
+        uis.InputEnded:Connect(function(up) if up.UserInputType == Enum.UserInputType.MouseButton1 then move:Disconnect() end end)
+    end
+end)
+
+-- [[ BAGWORK INTEGRATED TUCK LOGIC ]] --
+-- This uses the exact logic from the file you provided
+backpack.ChildAdded:Connect(function(item)
+    if AutoTuckEnabled and item.Name == "Football" then
+        
+        -- wait(0.1) -- This was the default in your file, replaced with slider:
+        task.wait(_G.TuckSpeed / 1000)
+        
+        -- Exact Remote Arguments from your code
+        local args = {
+            [1] = {
+                [1] = "Tuck"
+            }
+        }
+        
+        -- Method A: Character-based remote (RCFA Style)
+        local char = p.Character
+        if char and char:FindFirstChild("Football") and char.Football:FindFirstChild("Handle") then
+            local remote = char.Football.Handle:FindFirstChild("RemoteEvent")
+            if remote then
+                remote:FireServer(unpack(args))
+            end
+        end
+
+        -- Method B: Jersey-based remote (HSFL Style)
+        local jersey = char and char:FindFirstChild("Jersey")
+        if jersey and jersey:FindFirstChild("Event") then
+            jersey.Event:FireServer(unpack(args))
+        end
+    end
+end)
